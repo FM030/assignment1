@@ -1,0 +1,197 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task List</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      max-width: 700px;
+      margin: 30px auto;
+      padding: 0 20px;
+      background: #f9f9f9;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .divButton {
+      margin: 15px 0;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    button {
+      padding: 10px 22px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      transition: 0.2s;
+    }
+
+    #btn_add    { background: #27ae60; }
+    #btn_add:hover    { background: #219653; }
+
+    #btn_toggle { background: #7f8c8d; }
+    #btn_toggle:hover { background: #636e72; }
+
+    #btn_email  { background: #3498db; }
+    #btn_email:hover  { background: #2980b9; }
+
+    ol#order_list {
+      list-style: none;
+      padding: 0;
+      counter-reset: task;
+    }
+
+    li {
+      background: white;
+      margin: 12px 0;
+      padding: 14px 18px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 22px;
+    }
+
+    li:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    li.completed span {
+      text-decoration: line-through;
+      color: #95a5a6;
+      opacity: 0.8;
+    }
+
+    li.priority-1 span { color: #e74c3c; font-weight: bold; }
+    li.priority-2 span { color: #2c3e50; font-weight: 500; }
+    li.priority-3 span { color: #7f8c8d; font-weight: normal; }
+
+    li::before {
+      counter-increment: task;
+      content: counter(task) ".";
+      min-width: 40px;
+      color: #636e72;
+      font-weight: bold;
+    }
+
+    .hide-completed li.completed {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <textarea id='text' rows="3" placeholder="e.g. Lecture preparation: cloud computing, 1; Dinner, 2">
+Dinner, 1; Exercise, 2; Study, 3
+  </textarea>
+  <br/>
+  <div class='divButton'>
+    <button id='btn_add'>Add</button>
+    <button id='btn_toggle'>TOGGLE</button>
+    <button id='btn_email'>Email Tasks</button>
+  </div>
+
+  <ol id='order_list'></ol>
+
+  <script>
+    const textarea = document.getElementById('text');
+    const btnAdd   = document.getElementById('btn_add');
+    const btnToggle = document.getElementById('btn_toggle');
+    const btnEmail = document.getElementById('btn_email');
+    const list     = document.getElementById('order_list');
+
+    let hideCompleted = false;
+
+    function addItems() {
+      const text = textarea.value.trim();
+      if (!text) return;
+
+      const items = text.split(';')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      items.forEach(item => {
+        const parts = item.split(',').map(s => s.trim());
+        const task = parts[0];
+        const prioStr = parts[1] || "2";
+        const priority = Math.max(1, Math.min(3, parseInt(prioStr) || 2));
+
+        if (!task) return;
+
+        const li = document.createElement('li');
+        li.className = `priority-${priority}`;
+        li.innerHTML = `<span>${task}</span>`;
+
+        li.addEventListener('click', function(e) {
+          if (e.detail === 1) {
+            this.classList.toggle('completed');
+          }
+        });
+
+        li.addEventListener('dblclick', function() {
+          if (confirm(`Delete task?\n\n"${task}"`)) {
+            this.remove();
+          }
+        });
+
+        list.appendChild(li);
+      });
+
+      textarea.value = '';
+    }
+
+    btnAdd.onclick = addItems;
+
+    textarea.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        addItems();
+      }
+    });
+
+    btnToggle.onclick = () => {
+      hideCompleted = !hideCompleted;
+      list.classList.toggle('hide-completed', hideCompleted);
+    };
+
+    btnEmail.onclick = () => {
+      const tasks = Array.from(list.querySelectorAll('li'))
+        .map(li => {
+          const prio = li.className.match(/priority-(\d)/)?.[1] || '?';
+          const text = li.querySelector('span').textContent;
+          const status = li.classList.contains('completed') ? ' [COMPLETED]' : '';
+          return `${prio}. ${text}${status}`;
+        })
+        .join('%0D%0A');
+
+      if (!tasks) {
+        alert("No tasks to email.");
+        return;
+      }
+
+      const subject = "My Task List";
+      const body = "Here are my current tasks:%0D%0A%0D%0A" + tasks;
+      window.location.href = `mailto:yourname@example.com?subject=${encodeURIComponent(subject)}&body=${body}`;
+    };
+
+    addItems();
+  </script>
+</body>
+</html>
